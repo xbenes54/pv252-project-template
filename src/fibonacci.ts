@@ -12,5 +12,5 @@ export function fibonacci(i: number): number {
 }
 
 export function initFibonacciUi(component: HTMLElement) {
-  component.innerHTML = `5th fibonacci number is <code>${fibonacci("5")}</code>`;
+  component.innerHTML = `5th fibonacci number is <code>${fibonacci(5)}</code>`;
 }
