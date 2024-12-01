@@ -41,34 +41,27 @@ export class HashElement extends FASTElement {
     this.#started = new Date();
     this.fileName = file.name;
 
-    // Read the file and then start computing the hash.
-    // TODO: We want to "move" this computation into a WebWorker so that it
-    // does not interfere with the rest of the UI.
-    const reader = new FileReader();
-    reader.onload = () => {
-      // The result should always be a string in this case.
-      const fileData = reader.result as string;
+    const hashingWorker = new Worker(
+        new URL("./hash_worker.ts", import.meta.url),
+    );
 
-      // At this point, we know how much data we have.
-      this.total = fileData.length;
+    hashingWorker.postMessage(file);
 
-      const hasher = new AsyncSha256();
-      hasher.async_digest(
-        fileData,
-        (hash) => {
-          // We are done.
-          this.hash = hash;
-          this.remaining = 0;
-          this.elapsed = new Date().getTime() - this.#started.getTime();
-        },
-        (remaining) => {
-          // Update progress.
-          this.remaining = remaining;
-          this.elapsed = new Date().getTime() - this.#started.getTime();
-        },
-      );
-    };
-    reader.readAsText(file);
+    hashingWorker.onmessage = (e) => {
+      const message = e.data;
+      if(message.type === "start"){
+        this.total = message.size
+      }
+      else if(message.type === "progress"){
+        this.remaining = message.remaining;
+        this.elapsed = new Date().getTime() - this.#started.getTime();
+      }else if(message.type === "done"){
+        this.hash = message.hash;
+        this.elapsed = message.elapsed;
+        this.remaining  = 0;
+        this.elapsed = new Date().getTime() - this.#started.getTime();
+      }
+    }
   }
 }
 
